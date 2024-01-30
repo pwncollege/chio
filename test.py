@@ -2,6 +2,7 @@
 
 import asteval
 import signal
+import time
 import pwn
 import ast
 import os
@@ -144,7 +145,7 @@ def test_cwd():
 def solve_chals(p, num_challenges):
     for _ in range(num_challenges):
         p.readuntil("solution for: ")
-        challenge = p.readline().strip()
+        challenge = p.readline().strip().decode()
         response = asteval.Interpreter()(challenge)
         assert response is not None
         p.sendline(str(response))
@@ -172,12 +173,14 @@ def test_challenges():
         p.sendline("asdf")
         assert b"Success!" not in p.readall()
 
+def test_signals():
     with pwn.process(f"{CHAL} --num_signals 10".split()) as p:
         p.readuntil("order: ")
         signal_list = ast.literal_eval(p.readline().strip().decode('latin1'))
         for s in signal_list:
-            os.kill(p.pid, getattr(signal, s))
             p.clean()
+            time.sleep(0.1)
+            os.kill(p.pid, getattr(signal, s))
         assert b"Success!" in p.readall()
 
     with pwn.process(f"{CHAL} --num_signals 10".split()) as p:
@@ -195,6 +198,7 @@ if __name__ == '__main__':
     test_pipes()
     test_parents()
     test_challenges()
+    test_signals()
     test_arg()
     test_cwd()
     test_fifo()
