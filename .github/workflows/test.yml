@@ -18,4 +18,5 @@ jobs:
 
       - name: Run tests
         run: |
+          echo "TEST_FLAG" | sudo tee /flag
           pytest -vrpP --maxfail=1 ./test.py
