@@ -14,7 +14,7 @@ jobs:
         run: |
           pip install pytest pytest-dependency ipython pwntools
           pip install -r requirements.txt
-          sudo apt-get install -y socat
+          sudo apt-get install -y socat python3-asteval python3-psutil
 
       - name: Run tests
         run: |
