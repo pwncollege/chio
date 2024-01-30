@@ -18,4 +18,4 @@ jobs:
 
       - name: Run tests
         run: |
-          pytest -vrpP ./test.py
+          pytest -vrpP --maxfail=1 ./test.py
