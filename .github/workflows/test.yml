@@ -12,8 +12,8 @@ jobs:
           cache: 'pip'
       - name: Install test dependencies
         run: |
-          pip install pytest pytest-dependency asteval ipython
-          apt install socat
+          pip install pytest pytest-dependency ipython
+          apt-get install -y socat
 
       - name: Run tests against dojo
         run: |
