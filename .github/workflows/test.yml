@@ -16,6 +16,6 @@ jobs:
           pip install -r requirements.txt
           sudo apt-get install -y socat
 
-      - name: Run tests against dojo
+      - name: Run tests
         run: |
           pytest -vrpP ./test.py
