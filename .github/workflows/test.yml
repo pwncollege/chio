@@ -12,7 +12,7 @@ jobs:
           cache: 'pip'
       - name: Install test dependencies
         run: |
-          pip install pytest pytest-dependency ipython
+          pip install pytest pytest-dependency ipython pwntools
           pip install -r requirements.txt
           sudo apt-get install -y socat
 
