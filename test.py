@@ -13,20 +13,27 @@ def test_parents():
     # test python
     with open("/tmp/x.py", "w") as o:
         o.write(f"""import subprocess; print(subprocess.check_output("{CHAL} --parent python".split()))\n""")
-    assert b'Success!' in pwn.process("python /tmp/x.py".split()).readall()
+    with pwn.process("python /tmp/x.py".split()) as p:
+        assert b'Success!' in p.readall()
 
     # test shell
-    assert b'Success!' not in pwn.process(f"{CHAL} --parent bash".split()).readall()
-    assert b'Success!' in pwn.process(f"echo {CHAL} --parent bash | bash", shell=True).readall()
+    with pwn.process(f"{CHAL} --parent bash".split()) as p:
+        assert b'Success!' not in p.readall()
+    with pwn.process(f"echo {CHAL} --parent bash | bash", shell=True) as p:
+        assert b'Success!' in p.readall()
 
     # test shellscript
     with open("/tmp/x.sh", "w") as o:
         o.write(f"""#!/bin/bash\n{CHAL} --parent shellscript""")
-    assert b'Success!' in pwn.process("bash /tmp/x.sh".split()).readall()
+    with pwn.process("bash /tmp/x.sh".split()) as p:
+        assert b'Success!' in p.readall()
 
     # test ipython
-    assert b'Success!' in pwn.process(f"""echo 'import subprocess; print(subprocess.check_output("{CHAL} --parent ipython".split()))' | ipython""", shell=True).readall()
-    assert b'Success!' not in pwn.process(f"{CHAL} --parent ipython".split()).readall()
+    with pwn.process(f"""echo 'import subprocess; print(subprocess.check_output("{CHAL} --parent ipython".split()))' | ipython""", shell=True) as p:
+        assert b'Success!' in p.readall()
+
+    with pwn.process(f"{CHAL} --parent ipython".split()) as p:
+        assert b'Success!' not in p.readall()
 
     # test find
     assert b'Success!' in pwn.process(f"""find /mnt -exec {CHAL} --parent find \\;""", shell=True).readall()
