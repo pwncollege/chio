@@ -44,13 +44,13 @@ def check_ipython(process):
     print("[INFO] If the process being checked is just a normal 'ipython', you'll be okay!")
     print("")
     check_exe_basename(process, 'python')
-    assert os.path.basename(process.cmdline()[1]).startswith('ipython'), f"It does not look like the module being run is ipython."
-    assert len(process.cmdline()) == 2, f"ipython must be running in its default, interactive mode (i.e., ipython with no commandline arguments)."
+    assert os.path.basename(process.cmdline()[1]).startswith('ipython'), "It does not look like the module being run is ipython."
+    assert len(process.cmdline()) == 2, "ipython must be running in its default, interactive mode (i.e., ipython with no commandline arguments)."
 
 def check_python(process):
     print("[TEST] We will now check that that the process is a non-interactive python instance (i.e., an executing python script).")
     check_exe_basename(process, 'python')
-    assert len(process.cmdline()) == 2 and process.cmdline()[1].endswith(".py"), f"The python process must be executing a python script that you wrote like this: `python my_script.py`"
+    assert len(process.cmdline()) == 2 and process.cmdline()[1].endswith(".py"), "The python process must be executing a python script that you wrote like this: `python my_script.py`"
 
 def check_binary(process):
     print("[TEST] Checking to make sure that the process is a custom binary that you created by compiling a C program")
@@ -90,7 +90,7 @@ def check_shellscript(process):
     print("[TEST] Checking to make sure the process is a non-interactive shell script.")
 
     assert os.path.basename(process.exe()) in [ 'sh', 'bash' ], f"Process interpreter must be 'sh' or 'bash'. Yours is: {os.path.basename(process.exe())}"
-    assert len(process.cmdline()) == 2 and process.cmdline()[1].endswith(".sh"), f"The shell process must be executing a shell script that you wrote like this: `bash my_script.sh`"
+    assert len(process.cmdline()) == 2 and process.cmdline()[1].endswith(".sh"), "The shell process must be executing a shell script that you wrote like this: `bash my_script.sh`"
 
 PROCESS_TYPE_CHECKERS = {
     'python': check_python,
@@ -165,11 +165,12 @@ def resolve_fd_socket_partner(pid, fd):
         except StopIteration:
             pass
     else:
-        raise Exception("Connection check failed to find a connection. Please report this; it is not your fault.")
+        raise RuntimeError("Connection check failed to find a connection. Please report this; it is not your fault.")
 
     try:
         their_pid = next(o for o in psutil.net_connections() if o.raddr == our_connection.laddr).pid
     except StopIteration:
+        #pylint: disable=raise-missing-from
         raise AssertionError("You did not make a connection from within this container, or your client process terminated prematurely.")
     return their_pid
 
@@ -219,7 +220,7 @@ def check_arg(args, n, v):
         print("[HINT] simply need to pass in a different argv[0]. Bash has several ways to do it, but one way is to")
         print("[HINT] use a combination of a symbolic link (e.g., the `ln -s` command) and the PATH environment variable.")
 
-    assert len(args) >= n-1, f"It looks like you did not pass enough arguments to the program."
+    assert len(args) >= n-1, "It looks like you did not pass enough arguments to the program."
     assert args[n] == v, f"argv[{n}] is not '{v}' (it seems to be '{args[n]}', instead)."
 
 def check_env(k, v):
@@ -288,7 +289,7 @@ def check_signals(num, myrand=random):
         old_size = len(EXPECTED_SIGNALS)
         time.sleep(1)
         if len(EXPECTED_SIGNALS) != old_size:
-            print(f"[INFO] Nice, you sent one of the signals!")
+            print("[INFO] Nice, you sent one of the signals!")
 
 #
 # Main code
@@ -363,7 +364,7 @@ def do_checks(args):
         print("[GOOD] Looks like my working directory is correct!")
 
     if args.parent_different_cwd:
-        print(f"[TEST] My working directory should be different than the parent process'!")
+        print("[TEST] My working directory should be different than the parent process'!")
         print(f"[INFO] My working directory is: {SELF.cwd()}.")
         print(f"[INFO] Parent working directory is: {PARENT.cwd()}.")
         assert SELF.cwd() != PARENT.cwd(), "Parent process' and this process' working directories are the same!"
@@ -388,7 +389,7 @@ def do_checks(args):
         print("[GOOD] You successfully passed the empty environment check!")
 
     if args.empty_argv:
-        print(f"[TEST] You should launch me with an empty argv (i.e., argc == 0). Checking...")
+        print("[TEST] You should launch me with an empty argv (i.e., argc == 0). Checking...")
         assert not args.old_args[1:], f"argv is not empty, but has {len(args.old_args[1:])} entries..."
         print("[GOOD] You successfully passed the empty argument check!")
 
@@ -418,7 +419,7 @@ def listen_dup(port):
     s.bind(('localhost', port))
     s.listen()
     c,_ = s.accept()
-    print(f"[INFO] Connection received! All further communication will happen through the TCP connection.")
+    print("[INFO] Connection received! All further communication will happen through the TCP connection.")
     os.dup2(c.fileno(), 0)
     os.dup2(c.fileno(), 1)
     os.dup2(c.fileno(), 2)
@@ -443,55 +444,58 @@ def add_argument(parser, arg, **kwargs):
     return parser.add_argument(arg, **kwargs)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+    _parser = argparse.ArgumentParser()
 
     # process checks
-    add_argument(parser, "--parent", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific parent process")
-    add_argument(parser, "--client", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific (network) client process")
-    add_argument(parser, "--stdin_pipe", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific process at the other end of stdin")
-    add_argument(parser, "--stdout_pipe", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific process at the other end of stdout")
-    add_argument(parser, "--stdin_parent", action='store_true', help="the challenge makes sure the parent is communicating with us over stdin")
-    add_argument(parser, "--stdout_parent", action='store_true', help="the challenge makes sure the parent is communicating with us over stdout")
+    add_argument(_parser, "--parent", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific parent process")
+    add_argument(_parser, "--client", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific (network) client process")
+    add_argument(_parser, "--stdin_pipe", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific process at the other end of stdin")
+    add_argument(_parser, "--stdout_pipe", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific process at the other end of stdout")
+    add_argument(_parser, "--stdin_parent", action='store_true', help="the challenge makes sure the parent is communicating with us over stdin")
+    add_argument(_parser, "--stdout_parent", action='store_true', help="the challenge makes sure the parent is communicating with us over stdout")
 
     # i/o
-    add_argument(parser, "--listen_dup", type=int, nargs='?', help="the challenge will listen for input on a TCP port")
-    add_argument(parser, "--input_dup", type=int, nargs='?', help="the challenge will take input on a specific file descriptor")
-    add_argument(parser, "--stdin_path", type=str, nargs='?', help="the challenge will check that input is redirected from a specific file path")
-    add_argument(parser, "--stdout_path", type=str, nargs='?', help="the challenge will check that output is redirected to a specific file path")
-    add_argument(parser, "--stderr_path", type=str, nargs='?', help="the challenge will check that error output is redirected to a specific file path")
-    add_argument(parser, "--stdin_fifo", action='store_true', help="the challenge will make sure that stdin is redirected from a fifo")
-    add_argument(parser, "--stdout_fifo", action='store_true', help="the challenge will make sure that stdout is a redirected from fifo")
+    add_argument(_parser, "--listen_dup", type=int, nargs='?', help="the challenge will listen for input on a TCP port")
+    add_argument(_parser, "--input_dup", type=int, nargs='?', help="the challenge will take input on a specific file descriptor")
+    add_argument(_parser, "--stdin_path", type=str, nargs='?', help="the challenge will check that input is redirected from a specific file path")
+    add_argument(_parser, "--stdout_path", type=str, nargs='?', help="the challenge will check that output is redirected to a specific file path")
+    add_argument(_parser, "--stderr_path", type=str, nargs='?', help="the challenge will check that error output is redirected to a specific file path")
+    add_argument(_parser, "--stdin_fifo", action='store_true', help="the challenge will make sure that stdin is redirected from a fifo")
+    add_argument(_parser, "--stdout_fifo", action='store_true', help="the challenge will make sure that stdout is a redirected from fifo")
 
     # other process stuff
-    add_argument(parser, "--cwd", type=str, nargs='?', help="the challenge will check that it is running in a specific current working directory")
-    add_argument(parser, "--parent_different_cwd", action='store_true', help="the challenge will check to make sure that the parent's parent CWD to be different than the challenge's CWD")
-    add_argument(parser, "--empty_env", action='store_true', help="the challenge will check that the environment is empty (except LC_CTYPE, which is impossible to get rid of in some cases)")
-    add_argument(parser, "--empty_argv", action='store_true', help="the challenge will check that argv is empty (e.g., argc == 0)")
+    add_argument(_parser, "--cwd", type=str, nargs='?', help="the challenge will check that it is running in a specific current working directory")
+    add_argument(_parser, "--parent_different_cwd", action='store_true', help="the challenge will check to make sure that the parent's parent CWD to be different than the challenge's CWD")
+    add_argument(_parser, "--empty_env", action='store_true', help="the challenge will check that the environment is empty (except LC_CTYPE, which is impossible to get rid of in some cases)")
+    add_argument(_parser, "--empty_argv", action='store_true', help="the challenge will check that argv is empty (e.g., argc == 0)")
 
     # arg stuff
-    add_argument(parser, "--check_arg", type=str, nargs='?', help="the challenge will check that argv[NUM] holds value VALUE (listed to the right as NUM:VALUE)")
-    add_argument(parser, "--check_env", type=str, nargs='?', help="the challenge will check that env[KEY] holds value VALUE (listed to the right as KEY:VALUE)")
+    add_argument(_parser, "--check_arg", type=str, nargs='?', help="the challenge will check that argv[NUM] holds value VALUE (listed to the right as NUM:VALUE)")
+    add_argument(_parser, "--check_env", type=str, nargs='?', help="the challenge will check that env[KEY] holds value VALUE (listed to the right as KEY:VALUE)")
 
     # challenges
-    add_argument(parser, "--num_challenges", type=int, nargs='?', help="the challenge will force the parent process to solve a number of arithmetic problems")
-    add_argument(parser, "--challenge_ops", type=str, default="+", nargs='?', help="the challenge will use the following arithmetic operations in its arithmetic problems")
-    add_argument(parser, "--challenge_depth", type=int, default=1, nargs='?', help="the complexity (in terms of nested expressions) of the arithmetic problems")
-    add_argument(parser, "--password", type=str, nargs='?', help="the challenge will check for a hardcoded password over stdin")
-    add_argument(parser, "--num_signals", type=int, nargs='?', help="the challenge will require the parent to send number of signals")
+    add_argument(_parser, "--num_challenges", type=int, nargs='?', help="the challenge will force the parent process to solve a number of arithmetic problems")
+    add_argument(_parser, "--challenge_ops", type=str, default="+", nargs='?', help="the challenge will use the following arithmetic operations in its arithmetic problems")
+    add_argument(_parser, "--challenge_depth", type=int, default=1, nargs='?', help="the complexity (in terms of nested expressions) of the arithmetic problems")
+    add_argument(_parser, "--password", type=str, nargs='?', help="the challenge will check for a hardcoded password over stdin")
+    add_argument(_parser, "--num_signals", type=int, nargs='?', help="the challenge will require the parent to send number of signals")
 
     # remaining arguments
-    parser.add_argument("old_args", nargs=argparse.REMAINDER)
+    _parser.add_argument("old_args", nargs=argparse.REMAINDER)
 
-    _args = parser.parse_args()
+    _args = _parser.parse_args()
 
     assert sys.executable == '/usr/bin/python3', "ERROR: unexpected python runtime. Contact the profs (unless you're trying to be sneaky)."
     assert (not _args.old_args) or _args.old_args[0] == "--", "ERROR: INVALID OLD_ARGV. Contact the profs."
 
     print("WELCOME! This challenge makes the following asks of you:")
     for _a,_v in vars(_args).items():
-        if _a == 'old_args': continue
-        if _v in ( None, False ): continue
-        if _a in [ "challenge_ops", "challenge_depth" ] and not _args.num_challenges: continue
+        if _a == 'old_args':
+            continue
+        if _v in ( None, False ):
+            continue
+        if _a in [ "challenge_ops", "challenge_depth" ] and not _args.num_challenges:
+            continue
         if _v is True:
             print("-", ARG_HELP[_a])
         else:
