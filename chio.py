@@ -17,63 +17,80 @@ SELF = psutil.Process(os.getpid())
 PARENT = SELF.parent()
 
 #
+# Output
+#
+
+def print_info(msg):
+    print("[INFO]", msg)
+def print_warn(msg):
+    print("[WARN]", msg)
+def print_hint(msg):
+    print("[HINT]", msg)
+def print_test(msg):
+    print("[TEST]", msg)
+def print_pass(msg):
+    print("[PASS]", msg)
+def print_fail(msg):
+    print("[FAIL]", msg)
+
+#
 # Checking processes.
 #
 
 def check_exe_basename(process, basename):
-    print(f"[INFO] The process' executable is {process.exe()}.")
+    print_info(f"The process' executable is {process.exe()}.")
     if os.path.basename(process.exe()) == "docker-init":
-        print("[WARN] This process is the initialization process of your docker container (aka PID 1).")
-        print("[WARN] When the parent of a process terminates, that process is 'reparented' to PID 1.")
-        print("[WARN] So, the likely situation here is that your parent process terminated before")
-        print("[WARN] waiting on the child. Go fix that :-). Look into waitpid() in C, process.wait() for")
-        print("[WARN] pwntools, or Popen.wait() for subprocess.")
+        print_warn("This process is the initialization process of your docker container (aka PID 1).")
+        print_warn("When the parent of a process terminates, that process is 'reparented' to PID 1.")
+        print_warn("So, the likely situation here is that your parent process terminated before")
+        print_warn("waiting on the child. Go fix that :-). Look into waitpid() in C, process.wait() for")
+        print_warn("pwntools, or Popen.wait() for subprocess.")
     else:
-        print("[INFO] This might be different than expected because of symbolic links (for example, from /usr/bin/python to /usr/bin/python3 to /usr/bin/python3.8).")
+        print_info("This might be different than expected because of symbolic links (for example, from /usr/bin/python to /usr/bin/python3 to /usr/bin/python3.8).")
 
     actual_basename = os.path.basename(os.path.realpath(shutil.which(basename)))
-    print(f"[INFO] To pass the checks, the executable must be {actual_basename}.")
+    print_info(f"To pass the checks, the executable must be {actual_basename}.")
     assert os.path.basename(process.exe()) == actual_basename, f"Executable must be '{basename}'. Yours is: {os.path.basename(process.exe())}"
 
 def check_ipython(process):
-    print("[TEST] We will now check that that the process is an interactive ipython instance.")
-    print("")
-    print("[INFO] Since ipython runs as a script inside python, this will check a few things:")
-    print("[INFO] 1. That the process itself is python.")
-    print("[INFO] 2. That the module being run in python is ipython.")
-    print("[INFO] If the process being checked is just a normal 'ipython', you'll be okay!")
-    print("")
+    print_test("We will now check that that the process is an interactive ipython instance.")
+    print_info("")
+    print_info("Since ipython runs as a script inside python, this will check a few things:")
+    print_info("1. That the process itself is python.")
+    print_info("2. That the module being run in python is ipython.")
+    print_info("If the process being checked is just a normal 'ipython', you'll be okay!")
+    print_info("")
     check_exe_basename(process, 'python')
     assert os.path.basename(process.cmdline()[1]).startswith('ipython'), "It does not look like the module being run is ipython."
     assert len(process.cmdline()) == 2, "ipython must be running in its default, interactive mode (i.e., ipython with no commandline arguments)."
 
 def check_python(process):
-    print("[TEST] We will now check that that the process is a non-interactive python instance (i.e., an executing python script).")
+    print_test("We will now check that that the process is a non-interactive python instance (i.e., an executing python script).")
     check_exe_basename(process, 'python')
     assert len(process.cmdline()) == 2 and process.cmdline()[1].endswith(".py"), "The python process must be executing a python script that you wrote like this: `python my_script.py`"
 
 def check_binary(process):
-    print("[TEST] Checking to make sure that the process is a custom binary that you created by compiling a C program")
-    print("[TEST] that you wrote. Make sure your C program has a function called 'pwncollege' in it --- otherwise,")
-    print("[TEST] it won't pass the checks.")
+    print_test("Checking to make sure that the process is a custom binary that you created by compiling a C program")
+    print_test("that you wrote. Make sure your C program has a function called 'pwncollege' in it --- otherwise,")
+    print_test("it won't pass the checks.")
 
     if process == PARENT:
-        print("[HINT] If this is a check for the *parent* process, keep in mind that the exec() family of system calls")
-        print("[HINT] does NOT result in a parent-child relationship. The exec()ed process simply replaces the exec()ing")
-        print("[HINT] process. Parent-child relationships are created when a process fork()s off a child-copy of itself,")
-        print("[HINT] and the child-copy can then execve() a process that will be the new child. If we're checking for a")
-        print("[HINT] parent process, that's how you make that relationship.")
+        print_hint("If this is a check for the *parent* process, keep in mind that the exec() family of system calls")
+        print_hint("does NOT result in a parent-child relationship. The exec()ed process simply replaces the exec()ing")
+        print_hint("process. Parent-child relationships are created when a process fork()s off a child-copy of itself,")
+        print_hint("and the child-copy can then execve() a process that will be the new child. If we're checking for a")
+        print_hint("parent process, that's how you make that relationship.")
 
-    print(f"[INFO] The executable that we are checking is: {process.exe()}.")
+    print_info(f"The executable that we are checking is: {process.exe()}.")
     if os.path.basename(process.exe()) in [ "bash", "dash", "docker-init" ]:
-        print("[HINT] One frequent cause of the executable unexpectedly being a shell or docker-init is that your")
-        print("[HINT] parent process terminated before this check was run. This happens when your parent process launches")
-        print("[HINT] the child but does not wait on it! Look into the waitpid() system call to wait on the child!")
-        print("")
-        print("[HINT] Another frequent cause is the use of system() or popen() to execute the challenge. Both will actually")
-        print("[HINT] execute a shell that will then execute the challenge, so the parent of the challenge will be that")
-        print("[HINT] shell, rather than your program. You must use fork() and one of the exec family of functions (execve(),")
-        print("[HINT] execl(), etc).")
+        print_hint("One frequent cause of the executable unexpectedly being a shell or docker-init is that your")
+        print_hint("parent process terminated before this check was run. This happens when your parent process launches")
+        print_hint("the child but does not wait on it! Look into the waitpid() system call to wait on the child!")
+        print_hint("")
+        print_hint("Another frequent cause is the use of system() or popen() to execute the challenge. Both will actually")
+        print_hint("execute a shell that will then execute the challenge, so the parent of the challenge will be that")
+        print_hint("shell, rather than your program. You must use fork() and one of the exec family of functions (execve(),")
+        print_hint("execl(), etc).")
 
     assert process.exe().startswith("/home"), "The process must be your own program in your own home directory."
     assert len(process.cmdline()) == 1, "The process must have been called with no commandline arguments (argc == 1)."
@@ -81,13 +98,13 @@ def check_binary(process):
     assert b"pwncollege" in subprocess.check_output([ "/usr/bin/nm", "-a", process.exe() ], stderr=subprocess.PIPE), "The program must contain a function named 'pwncollege'."
 
 def check_bash(process):
-    print("[TEST] Checking to make sure the process is the bash shell. If this is a check for the parent process, then,")
-    print("[TEST] most likely, this is what you do by default anyways, but we'll check just in case...")
+    print_test("Checking to make sure the process is the bash shell. If this is a check for the parent process, then,")
+    print_test("most likely, this is what you do by default anyways, but we'll check just in case...")
     check_exe_basename(process, 'bash')
     assert len(process.cmdline()) == 1, f"The shell process must be running in its default, interactive mode (/bin/bash with no commandline arguments). Your commandline arguments are: {process.cmdline()}"
 
 def check_shellscript(process):
-    print("[TEST] Checking to make sure the process is a non-interactive shell script.")
+    print_test("Checking to make sure the process is a non-interactive shell script.")
 
     assert os.path.basename(process.exe()) in [ 'sh', 'bash' ], f"Process interpreter must be 'sh' or 'bash'. Yours is: {os.path.basename(process.exe())}"
     assert len(process.cmdline()) == 2 and process.cmdline()[1].endswith(".sh"), "The shell process must be executing a shell script that you wrote like this: `bash my_script.sh`"
@@ -123,11 +140,11 @@ def name_fd(fd):
     return "stdin" if fd == 0 else "stdout" if fd == 1 else "stderr" if fd == 2 else f"file descriptor {fd}"
 
 def check_fd_path(fd, path):
-    print(f"[TEST] I will now check that you redirected {path} to/from my {name_fd(fd)}.")
-    print("")
-    print("[ADVICE] File descriptors are inherited from the parent, unless the FD_CLOEXEC is set by the parent on the file descriptor.")
-    print("[ADVICE] For security reasons, some programs, such as python, do this by default in certain cases. Be careful if you are")
-    print("[ADVICE] creating and trying to pass in FDs in python.")
+    print_test(f"I will now check that you redirected {path} to/from my {name_fd(fd)}.")
+    print_hint("")
+    print_hint("File descriptors are inherited from the parent, unless the FD_CLOEXEC is set by the parent on the file descriptor.")
+    print_hint("For security reasons, some programs, such as python, do this by default in certain cases. Be careful if you are")
+    print_hint("creating and trying to pass in FDs in python.")
 
     actual_path = resolve_fd_path(os.getpid(), fd)
     assert os.path.exists(actual_path) and not actual_path.startswith("/dev/pts"), f"You have not redirected anything for this process' {name_fd(fd)}."
@@ -141,9 +158,9 @@ def check_stderr_path(path):
     check_fd_path(2, path)
 
 def check_fifo(fd):
-    print("[HINT] A FIFO stands for First In First Out, a type of special file that passes data between processes that write to it and")
-    print("[HINT] processes that read from it. Look at the mkfifo man page and play around with FIFOs on the commandline to get a feel")
-    print("[HINT] for them.")
+    print_hint("A FIFO stands for First In First Out, a type of special file that passes data between processes that write to it and")
+    print_hint("processes that read from it. Look at the mkfifo man page and play around with FIFOs on the commandline to get a feel")
+    print_hint("for them.")
 
     path = resolve_fd_path(os.getpid(), fd)
     assert os.path.exists(path) and not path.startswith("/dev/pts"), f"You have not redirected anything to/from this process' {name_fd(fd)}."
@@ -214,11 +231,11 @@ def check_cwd(process, cwd):
 
 def check_arg(args, n, v):
     if n == 0:
-        print("[HINT] argv[0] is passed into the execve() system call *separately* from the program path to execute.")
-        print("[HINT] This means that it does not have to be the same as the program path, and that you can actually")
-        print("[HINT] control it. This is done differently for different methods of execution. For example, in C, you")
-        print("[HINT] simply need to pass in a different argv[0]. Bash has several ways to do it, but one way is to")
-        print("[HINT] use a combination of a symbolic link (e.g., the `ln -s` command) and the PATH environment variable.")
+        print_hint("argv[0] is passed into the execve() system call *separately* from the program path to execute.")
+        print_hint("This means that it does not have to be the same as the program path, and that you can actually")
+        print_hint("control it. This is done differently for different methods of execution. For example, in C, you")
+        print_hint("simply need to pass in a different argv[0]. Bash has several ways to do it, but one way is to")
+        print_hint("use a combination of a symbolic link (e.g., the `ln -s` command) and the PATH environment variable.")
 
     assert len(args) >= n-1, "It looks like you did not pass enough arguments to the program."
     assert args[n] == v, f"argv[{n}] is not '{v}' (it seems to be '{args[n]}', instead)."
@@ -249,14 +266,14 @@ def generate_challenge(ops, depth, myrand):
 def check_challenges(num, ops, depth, myrand=random):
     for _ in range(num):
         challenge = generate_challenge(ops, myrand.randrange(depth), myrand)
-        print(f"[TEST] CHALLENGE! Please send the solution for: {challenge}")
+        print_test(f"CHALLENGE! Please send the solution for: {challenge}")
         response = input()
         expected = str(asteval.Interpreter()(challenge))
         assert response == expected, f"Your response is incorrect! I expected {expected} but got {response}."
-        print("[GOOD] CORRECT!")
+        print_pass("CORRECT!")
 
 def check_password(password):
-    print("[INFO] Reading in your input now...")
+    print_info("Reading in your input now...")
     response = input().strip()
     assert response == password, f"You entered the wrong password ({response} instead of {password})."
 
@@ -268,12 +285,12 @@ SIGNALS = [ "SIGUSR1", "SIGUSR2", "SIGINT", "SIGABRT", "SIGHUP" ]
 EXPECTED_SIGNALS = [ ]
 
 def handle_signal(snum, _):
-    print(f"[INFO] Received signal {snum}! Is it correct?")
+    print_info(f"Received signal {snum}! Is it correct?")
     if snum == getattr(signal, EXPECTED_SIGNALS[-1]):
-        print("[GOOD] Correct!")
+        print_pass("Correct!")
         EXPECTED_SIGNALS.pop()
     else:
-        print("[FAIL] Incorrect signal received. Exiting.")
+        print_fail("Incorrect signal received. Exiting.")
         sys.exit(1)
 
 def setup_handlers():
@@ -284,151 +301,151 @@ def setup_handlers():
 def check_signals(num, myrand=random):
     setup_handlers()
     EXPECTED_SIGNALS[:] = [ myrand.choice(SIGNALS) for _ in range(num) ]
-    print(f"[TEST] You must send me (PID {os.getpid()}) the following signals, in exactly this order: {EXPECTED_SIGNALS[::-1]}")
+    print_test(f"You must send me (PID {os.getpid()}) the following signals, in exactly this order: {EXPECTED_SIGNALS[::-1]}")
     while EXPECTED_SIGNALS:
         old_size = len(EXPECTED_SIGNALS)
         time.sleep(1)
         if len(EXPECTED_SIGNALS) != old_size:
-            print("[INFO] Nice, you sent one of the signals!")
+            print_info("Nice, you sent one of the signals!")
 
 #
 # Main code
 #
 
 def do_checks(args):
-    print("[INFO] This challenge will now perform a bunch of checks.")
-    print("[INFO] If you pass these checks, you will receive the flag.")
+    print_info("This challenge will now perform a bunch of checks.")
+    print_info("If you pass these checks, you will receive the flag.")
 
     if args.parent:
-        print("[TEST] Performing checks on the parent process of this process.")
+        print_test("Performing checks on the parent process of this process.")
         PROCESS_TYPE_CHECKERS[args.parent](PARENT)
-        print("[GOOD] You have passed the checks on the parent process!")
+        print_pass("You have passed the checks on the parent process!")
 
     if args.client:
-        print("[TEST] This is a network server. Trying to determine the client process...")
+        print_test("This is a network server. Trying to determine the client process...")
         client = psutil.Process(resolve_fd_socket_partner(os.getpid(), 0))
-        print("[TEST] Performing tests on the client process!")
+        print_test("Performing tests on the client process!")
         PROCESS_TYPE_CHECKERS[args.client](client)
-        print("[GOOD] You have passed the checks on the client process!")
+        print_pass("You have passed the checks on the client process!")
 
     if args.stdin_pipe:
-        print("[TEST] You should have redirected another process to my stdin. Checking...")
+        print_test("You should have redirected another process to my stdin. Checking...")
         partner = psutil.Process(resolve_fd_pipe_partner(os.getpid(), 0, parent_ok=False))
-        print("[TEST] Performing checks on that process!")
+        print_test("Performing checks on that process!")
         PROCESS_TYPE_CHECKERS[args.stdin_pipe](partner)
-        print("[GOOD] You have passed the checks on the process on the other end of my stdin!")
+        print_pass("You have passed the checks on the process on the other end of my stdin!")
     if args.stdout_pipe:
-        print("[TEST] You should have redirected my stdout to another process. Checking...")
+        print_test("You should have redirected my stdout to another process. Checking...")
         time.sleep(1) # sleep to give the parent process enough time to spawn the partner, in case of stdout piping
         partner = psutil.Process(resolve_fd_pipe_partner(os.getpid(), 1, parent_ok=False))
-        print("[TEST] Performing checks on that process!")
+        print_test("Performing checks on that process!")
         PROCESS_TYPE_CHECKERS[args.stdout_pipe](partner)
-        print("[GOOD] You have passed the checks on the process on the other end of my stdout!")
+        print_pass("You have passed the checks on the process on the other end of my stdout!")
 
     if args.stdin_parent:
-        print("[TEST] You should have connected my stdin to my parent process. Checking...")
+        print_test("You should have connected my stdin to my parent process. Checking...")
         partner = psutil.Process(resolve_fd_pipe_partner(os.getpid(), 0, parent_ok=True))
         assert partner == PARENT, "It looks like stdin is connected to some other process than my parent!"
-        print("[GOOD] Looks like you connected my stdin to my parent process!")
+        print_pass("Looks like you connected my stdin to my parent process!")
     if args.stdout_parent:
-        print("[TEST] You should have connected my stdout to my parent process. Checking...")
+        print_test("You should have connected my stdout to my parent process. Checking...")
         partner = psutil.Process(resolve_fd_pipe_partner(os.getpid(), 1, parent_ok=True))
         assert partner == PARENT, "It looks like stdout is connected to some other process than my parent!"
-        print("[GOOD] Looks like you connected my stdout to my parent process!")
+        print_pass("Looks like you connected my stdout to my parent process!")
 
     if args.stdin_path:
-        print(f"[TEST] You should have redirected a file called {args.stdin_path} to my stdin. Checking...")
+        print_test(f"You should have redirected a file called {args.stdin_path} to my stdin. Checking...")
         check_stdin_path(args.stdin_path)
-        print("[GOOD] The file at the other end of my stdin looks okay!")
+        print_pass("The file at the other end of my stdin looks okay!")
     if args.stdout_path:
-        print(f"[TEST] You should have redirected my stdout to a file called {args.stdout_path}. Checking...")
+        print_test(f"You should have redirected my stdout to a file called {args.stdout_path}. Checking...")
         check_stdout_path(args.stdout_path)
-        print("[GOOD] The file at the other end of my stdout looks okay!")
+        print_pass("The file at the other end of my stdout looks okay!")
     if args.stderr_path:
-        print(f"[TEST] You should have redirected my stderr to {args.stderr_path}. Checking...")
+        print_test(f"You should have redirected my stderr to {args.stderr_path}. Checking...")
         check_stderr_path(args.stderr_path)
-        print("[GOOD] The file at the other end of my stderr looks okay!")
+        print_pass("The file at the other end of my stderr looks okay!")
 
     if args.stdin_fifo:
-        print("[TEST] You should have redirected a FIFO to my stdin. Checking...")
+        print_test("You should have redirected a FIFO to my stdin. Checking...")
         check_fifo(0)
-        print("[GOOD] Looks like my stdin is connected to a FIFO!")
+        print_pass("Looks like my stdin is connected to a FIFO!")
     if args.stdout_fifo:
-        print("[TEST] You should have redirected my stdout to a FIFO. Checking...")
+        print_test("You should have redirected my stdout to a FIFO. Checking...")
         check_fifo(1)
-        print("[GOOD] Looks like my stdout is connected to a FIFO!")
+        print_pass("Looks like my stdout is connected to a FIFO!")
 
     if args.cwd:
-        print(f"[TEST] You should launch me with a working directory of {args.cwd}.")
+        print_test(f"You should launch me with a working directory of {args.cwd}.")
         check_cwd(SELF, args.cwd)
-        print("[GOOD] Looks like my working directory is correct!")
+        print_pass("Looks like my working directory is correct!")
 
     if args.parent_different_cwd:
-        print("[TEST] My working directory should be different than the parent process'!")
-        print(f"[INFO] My working directory is: {SELF.cwd()}.")
-        print(f"[INFO] Parent working directory is: {PARENT.cwd()}.")
+        print_test("My working directory should be different than the parent process'!")
+        print_info(f"My working directory is: {SELF.cwd()}.")
+        print_info(f"Parent working directory is: {PARENT.cwd()}.")
         assert SELF.cwd() != PARENT.cwd(), "Parent process' and this process' working directories are the same!"
-        print("[GOOD] Looks like my working directory is different than my parent's!")
+        print_pass("Looks like my working directory is different than my parent's!")
 
     if args.check_arg:
         ns,v = args.check_arg.split(":")
         n = int(ns)
-        print(f"[TEST] My argv[{n}] should have a value of {v}! Let's check...")
+        print_test(f"My argv[{n}] should have a value of {v}! Let's check...")
         check_arg(args.old_args[1:], n, v)
-        print("[GOOD] You successfully passed the argument value check!")
+        print_pass("You successfully passed the argument value check!")
 
     if args.check_env:
         k,v = args.check_env.split(":")
-        print(f"[TEST] My '{k}' environment variable should have a value of {v}! Let's check...")
+        print_test(f"My '{k}' environment variable should have a value of {v}! Let's check...")
         check_env(k, v)
-        print("[GOOD] You successfully passed the environment value check!")
+        print_pass("You successfully passed the environment value check!")
 
     if args.empty_env:
-        print(f"[TEST] You should launch me with an {'otherwise-' if args.check_env else ''}empty environment. Checking...")
+        print_test(f"You should launch me with an {'otherwise-' if args.check_env else ''}empty environment. Checking...")
         check_env_count(1 if args.check_env else 0)
-        print("[GOOD] You successfully passed the empty environment check!")
+        print_pass("You successfully passed the empty environment check!")
 
     if args.empty_argv:
-        print("[TEST] You should launch me with an empty argv (i.e., argc == 0). Checking...")
+        print_test("You should launch me with an empty argv (i.e., argc == 0). Checking...")
         assert not args.old_args[1:], f"argv is not empty, but has {len(args.old_args[1:])} entries..."
-        print("[GOOD] You successfully passed the empty argument check!")
+        print_pass("You successfully passed the empty argument check!")
 
     if args.password:
-        print(f"[TEST] This program expects you to enter a simple password (specifically, {args.password}). Send it now!")
+        print_test(f"This program expects you to enter a simple password (specifically, {args.password}). Send it now!")
         check_password(args.password)
-        print("[GOOD] You successfully passed the password!")
+        print_pass("You successfully passed the password!")
 
     if args.num_challenges:
-        print(f"[INFO] This program will send you {args.num_challenges} mathematical challenge{'s' if args.num_challenges>1 else ''} that you will need to compute responses for.")
+        print_info(f"This program will send you {args.num_challenges} mathematical challenge{'s' if args.num_challenges>1 else ''} that you will need to compute responses for.")
         check_challenges(args.num_challenges, args.challenge_ops, args.challenge_depth)
-        print("[GOOD] You successfully passed the mathematical challenges!")
+        print_pass("You successfully passed the mathematical challenges!")
 
     if args.num_signals:
-        print("[INFO] This program will stop and wait for you to send it a number of signals. For more information on signals,")
-        print("[INFO] look at the man page of the kill command.")
+        print_info("This program will stop and wait for you to send it a number of signals. For more information on signals,")
+        print_info("look at the man page of the kill command.")
         check_signals(args.num_signals)
-        print("[GOOD] You successfully passed the signal challenges!")
+        print_pass("You successfully passed the signal challenges!")
 #
 # Other stuff
 #
 
 def listen_dup(port):
-    print(f"[INFO] This challenge is a network server, and will only communicate on TCP port {port}.")
+    print_info(f"This challenge is a network server, and will only communicate on TCP port {port}.")
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(('localhost', port))
     s.listen()
     c,_ = s.accept()
-    print("[INFO] Connection received! All further communication will happen through the TCP connection.")
+    print_info("Connection received! All further communication will happen through the TCP connection.")
     os.dup2(c.fileno(), 0)
     os.dup2(c.fileno(), 1)
     os.dup2(c.fileno(), 2)
 
 def input_dup(fd):
-    print(f"[TEST] This challenge takes input over {name_fd(fd)}! Make sure to provide this file descriptor to the program, and send any required input over it.")
+    print_test(f"This challenge takes input over {name_fd(fd)}! Make sure to provide this file descriptor to the program, and send any required input over it.")
     assert os.path.exists(f"/proc/{os.getpid()}/fd/{fd}"), f"It looks like there is no {name_fd(fd)} passed in to this process."
     os.dup2(fd, 0)
-    print("[GOOD] Preliminary checks are okay on the input FD!")
+    print_pass("Preliminary checks are okay on the input FD!")
 
 def setup_input(args):
     if args.listen_dup:
@@ -508,20 +525,20 @@ if __name__ == '__main__':
     try:
         setup_input(_args)
     except AssertionError as _e:
-        print("[FAIL] You did not satisfy all the execution requirements.")
-        print("[FAIL] Specifically, you must fix the following issue:")
-        print(f"[FAIL]    {_e}")
+        print_fail("You did not satisfy all the execution requirements.")
+        print_fail("Specifically, you must fix the following issue:")
+        print_fail(f"  {_e}")
         sys.exit(1)
 
     try:
         do_checks(_args)
     except AssertionError as _e:
-        print("[FAIL] You did not satisfy all the execution requirements.")
-        print("[FAIL] Specifically, you must fix the following issue:")
-        print(f"[FAIL]    {_e}")
+        print_fail("You did not satisfy all the execution requirements.")
+        print_fail("Specifically, you must fix the following issue:")
+        print_fail(f"  {_e}")
         sys.exit(2)
 
-    print("[GOOD] Success! You have satisfied all execution requirements.")
+    print_pass("Success! You have satisfied all execution requirements.")
     if _args.reward:
         print("Here is your flag:")
         print(open(_args.reward).read()) #pylint:disable=unspecified-encoding,consider-using-with
