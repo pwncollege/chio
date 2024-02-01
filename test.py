@@ -63,7 +63,8 @@ def test_redirection():
     # test stdout
     with pwn.process(f"{CHAL} --check_stdout_path /etc/passwd", shell=True) as p:
         assert b'Success!' not in p.readall()
-    with pwn.process(f"{CHAL} --check_stdout_path /tmp/out", stdout=open("/tmp/out", "wb"), shell=True) as p:
+    with pwn.process(f"{CHAL} --check_stdout_path /tmp/out --chio_pass_fd 1".split(), stdout=open("/tmp/out", "wb")) as p:
+        p.clean() # readall triggers bizarre pwntools behavior with a kill -9
         p.wait()
     with open("/tmp/out") as f:
         assert 'Success!' in f.read()
@@ -71,13 +72,15 @@ def test_redirection():
     # test stderr
     with pwn.process(f"{CHAL} --check_stderr_path /etc/passwd", shell=True) as p:
         assert b'Success!' not in p.readall()
-    with pwn.process(f"{CHAL} --check_stderr_path /tmp/err", stderr=open("/tmp/err", "wb"), shell=True) as p:
+    with pwn.process(f"{CHAL} --check_stderr_path /tmp/err --chio_pass_fd 1", stderr=open("/tmp/err", "wb"), shell=True) as p:
         assert b'Success!' in p.readuntil("Success!") #readall triggers bizarre pwntools behavior
 
 def test_networking():
-    with pwn.process(f"{CHAL} --listen_dup 1337 --client netcat", shell=True) as p:
+    with pwn.process(f"{CHAL} --listen_dup 1337 --client netcat --chio_pass_fd 1", shell=True) as p:
         p.readuntil("TCP port")
-        assert b"Success!" in pwn.process("nc -vv -w 1 localhost 1337", shell=True).readall()
+        output = pwn.process("nc -vv -w 1 localhost 1337".split()).readall()
+        p.readall()
+        assert b"Success!" in output
 
     with pwn.process(f"{CHAL} --listen_dup 1337 --client socat", shell=True) as p:
         p.readuntil("TCP port")
@@ -103,7 +106,7 @@ def test_pipes():
     assert b'Success!' not in pwn.process(f"{CHAL} --check_stdout_pipe cat", shell=True).readall()
     assert b'Success!' in pwn.process(f"{CHAL} --check_stdout_pipe grep | grep .", shell=True).readall()
     assert b'Success!' in pwn.process(f"{CHAL} --check_stdout_pipe sed | sed -e 's/X/Y/'", shell=True).readall()
-    assert b'Success!' in pwn.process(f"{CHAL} --check_stdout_pipe rev | rev", shell=True).readall()[::-1]
+    assert b'Success!' in pwn.process(f"{CHAL} --check_stdout_pipe rev --chio_pass_fd 1 | rev", shell=True).readall()[::-1]
 
     # test shellscript
     with open("/tmp/x.sh", "w") as o:
@@ -111,7 +114,7 @@ def test_pipes():
     assert b'Success!' in pwn.process(f"{CHAL} --check_stdout_pipe shellscript | bash /tmp/x.sh", shell=True).readall()
 
     # test parent communication
-    assert b'Success!' in pwn.process(f"{CHAL} --check_stdout_parent".split(), stdout=pwn.PIPE).readuntil("Success!")
+    assert b'Success!' in pwn.process(f"{CHAL} --check_stdout_parent --chio_pass_fd 1".split(), stdout=pwn.PIPE).readuntil("Success!")
     pwn.process(f"{CHAL} --check_stdout_parent".split(), stdout=open("/tmp/fdsa", "w")).wait()
     assert "Success!" not in open("/tmp/fdsa").read()
     assert b'Success!' in pwn.process(f"{CHAL} --check_stdin_parent".split()).readall()
@@ -144,7 +147,7 @@ def test_fifo():
         with open("/tmp/testfifo", "w") as _:
             assert b'Success!' in p.readall()
 
-    with pwn.process(f"{CHAL} --check_stdout_fifo >/tmp/testfifo", shell=True) as p:
+    with pwn.process(f"{CHAL} --check_stdout_fifo --chio_pass_fd 1 >/tmp/testfifo", shell=True) as p:
         with open("/tmp/testfifo", "r") as f:
             assert 'Success!' in f.read()
 
