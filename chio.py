@@ -21,13 +21,17 @@ PARENT = SELF.parent()
 #
 
 _last_type = None
+_open_files = { 0: sys.stdin, 1: sys.stdout, 2: sys.stderr}
 def print_msg(mtype, *msgs):
-    global _last_type #pylint:disable=global-statement
+    #pylint:disable=global-statement
+    global _last_type
 
-    fd = getattr(_args, f"chio_{mtype}_fd")
+    fd = getattr(_args, f"chio_{mtype}_fd") #pyltint:disable=used-before-assignment
     if fd == -1:
         return
-    f = sys.stdin if fd == 0 else sys.stdout if fd == 1 else sys.stderr if fd == 2 else os.fdopen(fd, "w")
+    if fd not in _open_files:
+        _open_files[fd] = os.fdopen(fd, "w")
+    f = _open_files[fd]
     if _last_type and _last_type != mtype:
         print("", file=f)
     _last_type = mtype
