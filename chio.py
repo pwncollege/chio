@@ -20,18 +20,22 @@ PARENT = SELF.parent()
 # Output
 #
 
-def print_info(msg):
-    print("[INFO]", msg)
-def print_warn(msg):
-    print("[WARN]", msg)
-def print_hint(msg):
-    print("[HINT]", msg)
-def print_test(msg):
-    print("[TEST]", msg)
-def print_pass(msg):
-    print("[PASS]", msg)
-def print_fail(msg):
-    print("[FAIL]", msg)
+def print_info(*msgs):
+    print("[INFO]", *msgs)
+def print_warn(*msgs):
+    print("[WARN]", *msgs)
+def print_hint(*msgs):
+    print("[HINT]", *msgs)
+def print_test(*msgs):
+    print("[TEST]", *msgs)
+def print_pass(*msgs):
+    print("[PASS]", *msgs)
+def print_fail(*msgs):
+    print("[FAIL]", *msgs)
+def print_flag(*msgs):
+    print("[FLAG]", *msgs)
+def print_hype(*msgs):
+    print("[HYPE]", *msgs)
 
 #
 # Checking processes.
@@ -328,49 +332,49 @@ def do_checks(args):
         PROCESS_TYPE_CHECKERS[args.client](client)
         print_pass("You have passed the checks on the client process!")
 
-    if args.stdin_pipe:
+    if args.check_stdin_pipe:
         print_test("You should have redirected another process to my stdin. Checking...")
         partner = psutil.Process(resolve_fd_pipe_partner(os.getpid(), 0, parent_ok=False))
         print_test("Performing checks on that process!")
-        PROCESS_TYPE_CHECKERS[args.stdin_pipe](partner)
+        PROCESS_TYPE_CHECKERS[args.check_stdin_pipe](partner)
         print_pass("You have passed the checks on the process on the other end of my stdin!")
-    if args.stdout_pipe:
+    if args.check_stdout_pipe:
         print_test("You should have redirected my stdout to another process. Checking...")
         time.sleep(1) # sleep to give the parent process enough time to spawn the partner, in case of stdout piping
         partner = psutil.Process(resolve_fd_pipe_partner(os.getpid(), 1, parent_ok=False))
         print_test("Performing checks on that process!")
-        PROCESS_TYPE_CHECKERS[args.stdout_pipe](partner)
+        PROCESS_TYPE_CHECKERS[args.check_stdout_pipe](partner)
         print_pass("You have passed the checks on the process on the other end of my stdout!")
 
-    if args.stdin_parent:
+    if args.check_stdin_parent:
         print_test("You should have connected my stdin to my parent process. Checking...")
         partner = psutil.Process(resolve_fd_pipe_partner(os.getpid(), 0, parent_ok=True))
         assert partner == PARENT, "It looks like stdin is connected to some other process than my parent!"
         print_pass("Looks like you connected my stdin to my parent process!")
-    if args.stdout_parent:
+    if args.check_stdout_parent:
         print_test("You should have connected my stdout to my parent process. Checking...")
         partner = psutil.Process(resolve_fd_pipe_partner(os.getpid(), 1, parent_ok=True))
         assert partner == PARENT, "It looks like stdout is connected to some other process than my parent!"
         print_pass("Looks like you connected my stdout to my parent process!")
 
-    if args.stdin_path:
-        print_test(f"You should have redirected a file called {args.stdin_path} to my stdin. Checking...")
-        check_stdin_path(args.stdin_path)
+    if args.check_stdin_path:
+        print_test(f"You should have redirected a file called {args.check_stdin_path} to my stdin. Checking...")
+        check_stdin_path(args.check_stdin_path)
         print_pass("The file at the other end of my stdin looks okay!")
-    if args.stdout_path:
-        print_test(f"You should have redirected my stdout to a file called {args.stdout_path}. Checking...")
-        check_stdout_path(args.stdout_path)
+    if args.check_stdout_path:
+        print_test(f"You should have redirected my stdout to a file called {args.check_stdout_path}. Checking...")
+        check_stdout_path(args.check_stdout_path)
         print_pass("The file at the other end of my stdout looks okay!")
-    if args.stderr_path:
-        print_test(f"You should have redirected my stderr to {args.stderr_path}. Checking...")
-        check_stderr_path(args.stderr_path)
+    if args.check_stderr_path:
+        print_test(f"You should have redirected my stderr to {args.check_stderr_path}. Checking...")
+        check_stderr_path(args.check_stderr_path)
         print_pass("The file at the other end of my stderr looks okay!")
 
-    if args.stdin_fifo:
+    if args.check_stdin_fifo:
         print_test("You should have redirected a FIFO to my stdin. Checking...")
         check_fifo(0)
         print_pass("Looks like my stdin is connected to a FIFO!")
-    if args.stdout_fifo:
+    if args.check_stdout_fifo:
         print_test("You should have redirected my stdout to a FIFO. Checking...")
         check_fifo(1)
         print_pass("Looks like my stdout is connected to a FIFO!")
@@ -466,19 +470,19 @@ if __name__ == '__main__':
     # process checks
     add_argument(_parser, "--parent", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific parent process")
     add_argument(_parser, "--client", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific (network) client process")
-    add_argument(_parser, "--stdin_pipe", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific process at the other end of stdin")
-    add_argument(_parser, "--stdout_pipe", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific process at the other end of stdout")
-    add_argument(_parser, "--stdin_parent", action='store_true', help="the challenge makes sure the parent is communicating with us over stdin")
-    add_argument(_parser, "--stdout_parent", action='store_true', help="the challenge makes sure the parent is communicating with us over stdout")
+    add_argument(_parser, "--check_stdin_pipe", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific process at the other end of stdin")
+    add_argument(_parser, "--check_stdout_pipe", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific process at the other end of stdout")
+    add_argument(_parser, "--check_stdin_parent", action='store_true', help="the challenge makes sure the parent is communicating with us over stdin")
+    add_argument(_parser, "--check_stdout_parent", action='store_true', help="the challenge makes sure the parent is communicating with us over stdout")
 
     # i/o
     add_argument(_parser, "--listen_dup", type=int, nargs='?', help="the challenge will listen for input on a TCP port")
     add_argument(_parser, "--input_dup", type=int, nargs='?', help="the challenge will take input on a specific file descriptor")
-    add_argument(_parser, "--stdin_path", type=str, nargs='?', help="the challenge will check that input is redirected from a specific file path")
-    add_argument(_parser, "--stdout_path", type=str, nargs='?', help="the challenge will check that output is redirected to a specific file path")
-    add_argument(_parser, "--stderr_path", type=str, nargs='?', help="the challenge will check that error output is redirected to a specific file path")
-    add_argument(_parser, "--stdin_fifo", action='store_true', help="the challenge will make sure that stdin is redirected from a fifo")
-    add_argument(_parser, "--stdout_fifo", action='store_true', help="the challenge will make sure that stdout is a redirected from fifo")
+    add_argument(_parser, "--check_stdin_path", type=str, nargs='?', help="the challenge will check that input is redirected from a specific file path")
+    add_argument(_parser, "--check_stdout_path", type=str, nargs='?', help="the challenge will check that output is redirected to a specific file path")
+    add_argument(_parser, "--check_stderr_path", type=str, nargs='?', help="the challenge will check that error output is redirected to a specific file path")
+    add_argument(_parser, "--check_stdin_fifo", action='store_true', help="the challenge will make sure that stdin is redirected from a fifo")
+    add_argument(_parser, "--check_stdout_fifo", action='store_true', help="the challenge will make sure that stdout is a redirected from fifo")
 
     # other process stuff
     add_argument(_parser, "--cwd", type=str, nargs='?', help="the challenge will check that it is running in a specific current working directory")
@@ -506,7 +510,7 @@ if __name__ == '__main__':
     assert sys.executable == '/usr/bin/python3', "ERROR: unexpected python runtime. Contact the profs (unless you're trying to be sneaky)."
     assert (not _args.old_args) or _args.old_args[0] == "--", "ERROR: INVALID OLD_ARGV. Contact the profs."
 
-    print("WELCOME! This challenge makes the following asks of you:")
+    print_info("WELCOME! This challenge makes the following asks of you:")
     for _a,_v in vars(_args).items():
         if _a == 'old_args':
             continue
@@ -515,12 +519,12 @@ if __name__ == '__main__':
         if _a in [ "challenge_ops", "challenge_depth" ] and not _args.num_challenges:
             continue
         if _v is True:
-            print("-", ARG_HELP[_a])
+            print_info("-", ARG_HELP[_a])
         else:
-            print("-", ARG_HELP[_a],":",_v)
-    print("")
-    print("ONWARDS TO GREATNESS!")
-    print("")
+            print_info("-", ARG_HELP[_a],":",_v)
+    print_hype("")
+    print_hype("ONWARDS TO GREATNESS!")
+    print_hype("")
 
     try:
         setup_input(_args)
@@ -540,6 +544,6 @@ if __name__ == '__main__':
 
     print_pass("Success! You have satisfied all execution requirements.")
     if _args.reward:
-        print("Here is your flag:")
-        print(open(_args.reward).read()) #pylint:disable=unspecified-encoding,consider-using-with
+        print_flag("Here is your flag:")
+        print_flag(open(_args.reward).read()) #pylint:disable=unspecified-encoding,consider-using-with
     sys.exit(0)

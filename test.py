@@ -56,17 +56,23 @@ def test_parents():
 
 def test_redirection():
     # test stdin
-    assert b'Success!' not in pwn.process(f"{CHAL} --stdin_path /etc/passwd", shell=True).readall()
-    assert b'Success!' in pwn.process(f"{CHAL} --stdin_path /etc/passwd".split(), stdin=open("/etc/passwd")).readuntil("Success!") #readall triggers bizarre pwntools behavior
+    assert b'Success!' not in pwn.process(f"{CHAL} --check_stdin_path /etc/passwd", shell=True).readall()
+    with pwn.process(f"{CHAL} --check_stdin_path /etc/passwd".split(), stdin=open("/etc/passwd")) as p:
+        assert b'Success!' in p.readuntil("Success!") #readall triggers bizarre pwntools behavior
 
     # test stdout
-    assert b'Success!' not in pwn.process(f"{CHAL} --stdout_path /etc/passwd", shell=True).readall()
-    pwn.process(f"{CHAL} --stdout_path /tmp/out", stdout=open("/tmp/out", "wb"), shell=True).wait()
-    assert 'Success!' in open("/tmp/out").read()
+    with pwn.process(f"{CHAL} --check_stdout_path /etc/passwd", shell=True) as p:
+        assert b'Success!' not in p.readall()
+    with pwn.process(f"{CHAL} --check_stdout_path /tmp/out", stdout=open("/tmp/out", "wb"), shell=True) as p:
+        p.wait()
+    with open("/tmp/out"):
+        assert 'Success!' in p.read()
 
     # test stderr
-    assert b'Success!' not in pwn.process(f"{CHAL} --stderr_path /etc/passwd", shell=True).readall()
-    assert b'Success!' in pwn.process(f"{CHAL} --stderr_path /tmp/err", stderr=open("/tmp/err", "wb"), shell=True).readuntil("Success!") #readall triggers bizarre pwntools behavior
+    with pwn.process(f"{CHAL} --check_stderr_path /etc/passwd", shell=True) as p:
+        assert b'Success!' not in p.readall()
+    with pwn.process(f"{CHAL} --check_stderr_path /tmp/err", stderr=open("/tmp/err", "wb"), shell=True) as p:
+        assert b'Success!' in p.readuntil("Success!") #readall triggers bizarre pwntools behavior
 
 def test_networking():
     with pwn.process(f"{CHAL} --listen_dup 1337 --client netcat", shell=True) as p:
@@ -90,26 +96,26 @@ def test_networking():
         assert b"Success!" not in pwn.process("""echo 'exec 3</dev/tcp/localhost/1337; while read -u 3 lol; do echo $lol; done' | bash -i""", shell=True).readall()
 
 def test_pipes():
-    with pwn.process(f"/bin/cat /etc/passwd - | {CHAL} --stdin_pipe cat", shell=True) as p:
+    with pwn.process(f"/bin/cat /etc/passwd - | {CHAL} --check_stdin_pipe cat", shell=True) as p:
         assert b'Success!' in p.readuntil("Success!")
 
-    assert b'Success!' in pwn.process(f"{CHAL} --stdout_pipe cat | cat", shell=True).readall()
-    assert b'Success!' not in pwn.process(f"{CHAL} --stdout_pipe cat", shell=True).readall()
-    assert b'Success!' in pwn.process(f"{CHAL} --stdout_pipe grep | grep .", shell=True).readall()
-    assert b'Success!' in pwn.process(f"{CHAL} --stdout_pipe sed | sed -e 's/X/Y/'", shell=True).readall()
-    assert b'Success!' in pwn.process(f"{CHAL} --stdout_pipe rev | rev", shell=True).readall()[::-1]
+    assert b'Success!' in pwn.process(f"{CHAL} --check_stdout_pipe cat | cat", shell=True).readall()
+    assert b'Success!' not in pwn.process(f"{CHAL} --check_stdout_pipe cat", shell=True).readall()
+    assert b'Success!' in pwn.process(f"{CHAL} --check_stdout_pipe grep | grep .", shell=True).readall()
+    assert b'Success!' in pwn.process(f"{CHAL} --check_stdout_pipe sed | sed -e 's/X/Y/'", shell=True).readall()
+    assert b'Success!' in pwn.process(f"{CHAL} --check_stdout_pipe rev | rev", shell=True).readall()[::-1]
 
     # test shellscript
     with open("/tmp/x.sh", "w") as o:
         o.write("""#!/bin/bash\ncat""")
-    assert b'Success!' in pwn.process(f"{CHAL} --stdout_pipe shellscript | bash /tmp/x.sh", shell=True).readall()
+    assert b'Success!' in pwn.process(f"{CHAL} --check_stdout_pipe shellscript | bash /tmp/x.sh", shell=True).readall()
 
     # test parent communication
-    assert b'Success!' in pwn.process(f"{CHAL} --stdout_parent".split(), stdout=pwn.PIPE).readuntil("Success!")
-    pwn.process(f"{CHAL} --stdout_parent".split(), stdout=open("/tmp/fdsa", "w")).wait()
+    assert b'Success!' in pwn.process(f"{CHAL} --check_stdout_parent".split(), stdout=pwn.PIPE).readuntil("Success!")
+    pwn.process(f"{CHAL} --check_stdout_parent".split(), stdout=open("/tmp/fdsa", "w")).wait()
     assert "Success!" not in open("/tmp/fdsa").read()
-    assert b'Success!' in pwn.process(f"{CHAL} --stdin_parent".split()).readall()
-    assert b'Success!' not in pwn.process(f"{CHAL} --stdin_parent".split(), stdin=open("/dev/null")).readuntil("FAIL")
+    assert b'Success!' in pwn.process(f"{CHAL} --check_stdin_parent".split()).readall()
+    assert b'Success!' not in pwn.process(f"{CHAL} --check_stdin_parent".split(), stdin=open("/dev/null")).readuntil("FAIL")
 
 def test_env():
     assert b'Success!' not in pwn.process(f"{CHAL} --empty_env", shell=True).readall()
@@ -128,17 +134,17 @@ def test_arg():
     assert b'Success!' not in pwn.process(f"{CHAL} --empty_argv -- /chal", shell=True).readall()
 
 def test_fifo():
-    assert b'Success!' not in pwn.process(f"{CHAL} --stdin_fifo", shell=True).readall()
+    assert b'Success!' not in pwn.process(f"{CHAL} --check_stdin_fifo", shell=True).readall()
 
     if os.path.exists("/tmp/testfifo"):
         os.unlink("/tmp/testfifo")
     os.mkfifo("/tmp/testfifo", 0o644)
 
-    with pwn.process(f"{CHAL} --stdin_fifo </tmp/testfifo", shell=True) as p:
+    with pwn.process(f"{CHAL} --check_stdin_fifo </tmp/testfifo", shell=True) as p:
         with open("/tmp/testfifo", "w") as _:
             assert b'Success!' in p.readall()
 
-    with pwn.process(f"{CHAL} --stdout_fifo >/tmp/testfifo", shell=True) as p:
+    with pwn.process(f"{CHAL} --check_stdout_fifo >/tmp/testfifo", shell=True) as p:
         with open("/tmp/testfifo", "r") as f:
             assert 'Success!' in f.read()
 
