@@ -25,7 +25,9 @@ def print_msg(mtype, *msgs):
     global _last_type #pylint:disable=global-statement
 
     fd = getattr(_args, f"chio_{mtype}_fd")
-    f = sys.stdin if fd == 0 else sys.stdout if fd == 1 else sys.stderr if fd == 2 else os.fdopen(fd)
+    if fd == -1:
+        return
+    f = sys.stdin if fd == 0 else sys.stdout if fd == 1 else sys.stderr if fd == 2 else os.fdopen(fd, "w")
     if _last_type and _last_type != mtype:
         print("", file=f)
     _last_type = mtype
@@ -517,14 +519,14 @@ if __name__ == '__main__':
 
     # chio behaviors
     #pylint:disable=consider-using-with
-    add_argument(_parser, "--chio_info_fd", type=int, default=2, help="file to write info to")
-    add_argument(_parser, "--chio_warn_fd", type=int, default=2, help="file to write warnings to")
-    add_argument(_parser, "--chio_hint_fd", type=int, default=2, help="file to write hints to")
-    add_argument(_parser, "--chio_test_fd", type=int, default=2, help="file to write things we're about to test to")
-    add_argument(_parser, "--chio_pass_fd", type=int, default=2, help="file to write pass messages to")
-    add_argument(_parser, "--chio_fail_fd", type=int, default=2, help="file to write fail messages to")
-    add_argument(_parser, "--chio_flag_fd", type=int, default=2, help="file to write the flag to")
-    add_argument(_parser, "--chio_hype_fd", type=int, default=2, help="file to write hype to")
+    add_argument(_parser, "--chio_info_fd", type=int, default=2, help="file to write info to (-1 to disable)")
+    add_argument(_parser, "--chio_warn_fd", type=int, default=2, help="file to write warnings to (-1 to disable)")
+    add_argument(_parser, "--chio_hint_fd", type=int, default=2, help="file to write hints to (-1 to disable)")
+    add_argument(_parser, "--chio_test_fd", type=int, default=2, help="file to write things we're about to test to (-1 to disable)")
+    add_argument(_parser, "--chio_pass_fd", type=int, default=2, help="file to write pass messages to (-1 to disable)")
+    add_argument(_parser, "--chio_fail_fd", type=int, default=2, help="file to write fail messages to (-1 to disable)")
+    add_argument(_parser, "--chio_flag_fd", type=int, default=2, help="file to write the flag to (-1 to disable)")
+    add_argument(_parser, "--chio_hype_fd", type=int, default=2, help="file to write hype to (-1 to disable)")
 
 
     # remaining arguments
