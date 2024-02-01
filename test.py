@@ -65,8 +65,8 @@ def test_redirection():
         assert b'Success!' not in p.readall()
     with pwn.process(f"{CHAL} --check_stdout_path /tmp/out", stdout=open("/tmp/out", "wb"), shell=True) as p:
         p.wait()
-    with open("/tmp/out"):
-        assert 'Success!' in p.read()
+    with open("/tmp/out") as f:
+        assert 'Success!' in f.read()
 
     # test stderr
     with pwn.process(f"{CHAL} --check_stderr_path /etc/passwd", shell=True) as p:
