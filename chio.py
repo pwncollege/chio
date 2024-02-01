@@ -479,7 +479,7 @@ if __name__ == '__main__':
     add_argument(_parser, "--challenge_depth", type=int, default=1, nargs='?', help="the complexity (in terms of nested expressions) of the arithmetic problems")
     add_argument(_parser, "--password", type=str, nargs='?', help="the challenge will check for a hardcoded password over stdin")
     add_argument(_parser, "--num_signals", type=int, nargs='?', help="the challenge will require the parent to send number of signals")
-    add_argument(_parser, "--reward", type=str, nargs='?', help="the challenge will output a reward file (e.g., /flag) if all the tests pass")
+    add_argument(_parser, "--reward", type=str, nargs='?', help="the challenge will output a reward file if all the tests pass")
 
     # remaining arguments
     _parser.add_argument("old_args", nargs=argparse.REMAINDER)
