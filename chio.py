@@ -364,6 +364,13 @@ def do_checks(args):
         print_test("Performing checks on that process!")
         PROCESS_TYPE_CHECKERS[args.check_stdout_pipe](partner)
         print_pass("You have passed the checks on the process on the other end of my stdout!")
+    if args.check_stderr_pipe:
+        print_test("You should have redirected my stderr to another process. Checking...")
+        time.sleep(1) # sleep to give the parent process enough time to spawn the partner, in case of stderr piping
+        partner = psutil.Process(resolve_fd_pipe_partner(os.getpid(), 2, parent_ok=False))
+        print_test("Performing checks on that process!")
+        PROCESS_TYPE_CHECKERS[args.check_stderr_pipe](partner)
+        print_pass("You have passed the checks on the process on the other end of my stderr!")
 
     if args.check_stdin_parent:
         print_test("You should have connected my stdin to my parent process. Checking...")
@@ -491,6 +498,7 @@ if __name__ == '__main__':
     add_argument(_parser, "--client", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific (network) client process")
     add_argument(_parser, "--check_stdin_pipe", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific process at the other end of stdin")
     add_argument(_parser, "--check_stdout_pipe", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific process at the other end of stdout")
+    add_argument(_parser, "--check_stderr_pipe", choices=list(PROCESS_TYPE_CHECKERS.keys()), nargs='?', help="the challenge checks for a specific process at the other end of stderr")
     add_argument(_parser, "--check_stdin_parent", action='store_true', help="the challenge makes sure the parent is communicating with us over stdin")
     add_argument(_parser, "--check_stdout_parent", action='store_true', help="the challenge makes sure the parent is communicating with us over stdout")
 
