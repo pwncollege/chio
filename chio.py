@@ -128,10 +128,17 @@ def check_shellscript(process):
     assert os.path.basename(process.exe()) in [ 'sh', 'bash' ], f"Process interpreter must be 'sh' or 'bash'. Yours is: {os.path.basename(process.exe())}"
     assert len(process.cmdline()) == 2 and process.cmdline()[1].endswith(".sh"), "The shell process must be executing a shell script that you wrote like this: `bash my_script.sh`"
 
+def check_challenge_shellscript(process):
+    print_test("Checking to make sure the process is a non-interactive shell script running in /challenge.")
+
+    assert os.path.basename(process.exe()) in [ 'sh', 'bash' ], f"Process interpreter must be 'sh' or 'bash'. Yours is: {os.path.basename(process.exe())}"
+    assert len(process.cmdline()) == 2 and process.cmdline()[1].startswith("/challenge"), f"The shell process must be executing a shell script under /challenge! Yours is: {process.cmdline()[1]}"
+
 PROCESS_TYPE_CHECKERS = {
     'python': check_python,
     'bash': check_bash,
     'shellscript': check_shellscript,
+    'challenge_shellscript': lambda p: check_challenge_shellscript(p),
     'ipython': check_ipython,
     'binary': check_binary,
     'netcat': lambda p: check_exe_basename(p, 'nc'),
