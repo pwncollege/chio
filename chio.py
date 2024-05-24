@@ -133,7 +133,11 @@ def check_challenge_shellscript(process):
     print_test("Checking to make sure the process is a non-interactive shell script running in /challenge.")
 
     assert os.path.basename(process.exe()) in [ 'sh', 'bash' ], f"Process interpreter must be 'sh' or 'bash'. Yours is: {os.path.basename(process.exe())}"
-    assert process.cmdline()[-1].startswith("/challenge"), f"The shell process must be executing a shell script under /challenge! Yours is: {process.cmdline()[-1]}"
+    assert len(process.cmdline()) > 1, "The shell must be running in non-interactive mode (with a script)!"
+    if process.cmdline()[1] == "-c":
+        assert process.cmdline()[3].startswith("/challenge"), f"The shell process must be executing a shell script under /challenge! Yours is: {process.cmdline()[3]}"
+    else:
+        assert process.cmdline()[1].startswith("/challenge"), f"The shell process must be executing a shell script under /challenge! Yours is: {process.cmdline()[1]}"
 
 PROCESS_TYPE_CHECKERS = {
     'python': check_python,
