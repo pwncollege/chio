@@ -20,13 +20,14 @@ PARENT = SELF.parent()
 # Output
 #
 
+_args = None
 _last_type = None
 _open_files = { 0: sys.stdin, 1: sys.stdout, 2: sys.stderr}
 def print_msg(mtype, *msgs):
     #pylint:disable=global-statement
     global _last_type
 
-    fd = getattr(_args, f"chio_{mtype}_fd") #pyltint:disable=used-before-assignment
+    fd = getattr(_args, f"chio_{mtype}_fd", -1) #pyltint:disable=used-before-assignment
     if fd == -1:
         return
     if fd not in _open_files:
