@@ -148,6 +148,7 @@ PROCESS_TYPE_CHECKERS = {
     'cat': lambda p: check_exe_basename(p, 'cat'),
     'grep': lambda p: check_exe_basename(p, 'grep'),
     'sed': lambda p: check_exe_basename(p, 'sed'),
+    'tee': lambda p: check_exe_basename(p, 'tee'),
     'find': lambda p: check_exe_basename(p, 'find'),
     'rev': lambda p: check_exe_basename(p, 'rev'),
 }
