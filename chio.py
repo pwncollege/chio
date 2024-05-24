@@ -72,7 +72,7 @@ def check_exe_basename(process, basename):
 
     actual_basename = os.path.basename(os.path.realpath(shutil.which(basename)))
     print_info(f"To pass the checks, the executable must be {actual_basename}.")
-    assert os.path.basename(process.exe()) == actual_basename, f"Executable must be '{basename}'. Yours is: {os.path.basename(process.exe())}"
+    assert os.path.basename(process.exe()) == actual_basename, f"Executable must be '{actual_basename}'. Yours is: {os.path.basename(process.exe())}"
 
 def check_ipython(process):
     print_test("We will now check that that the process is an interactive ipython instance.")
