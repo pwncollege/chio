@@ -274,7 +274,7 @@ def check_arg(args, n, v):
         print_hint("simply need to pass in a different argv[0]. Bash has several ways to do it, but one way is to")
         print_hint("use a combination of a symbolic link (e.g., the `ln -s` command) and the PATH environment variable.")
 
-    assert len(args) >= n-1, "It looks like you did not pass enough arguments to the program."
+    assert len(args) >= n, "It looks like you did not pass enough arguments to the program."
     assert args[n] == v, f"argv[{n}] is not '{v}' (it seems to be '{args[n]}', instead)."
 
 def check_env(k, v):
