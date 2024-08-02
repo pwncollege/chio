@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 
-import subprocess
 import argparse
 import asteval
-import signal
-import random
-import socket
-import psutil
-import shutil
-import time
-import stat
-import sys
 import os
+import psutil
+import random
+import re
+import shutil
+import signal
+import socket
+import stat
+import subprocess
+import sys
+import time
 
 SELF = psutil.Process(os.getpid())
 PARENT = SELF.parent()
@@ -59,7 +60,9 @@ def print_hype(*msgs):
 # Checking processes.
 #
 
-def check_exe_basename(process, basename):
+def check_exe_basename(process, basename, basename_regex=None):
+    if basename_regex is None:
+        basename_regex = f"{os.path.basename(os.path.realpath(shutil.which(basename)))}"
     print_info(f"The process' executable is {process.exe()}.")
     if os.path.basename(process.exe()) == "docker-init":
         print_warn("This process is the initialization process of your docker container (aka PID 1).")
@@ -70,9 +73,10 @@ def check_exe_basename(process, basename):
     else:
         print_info("This might be different than expected because of symbolic links (for example, from /usr/bin/python to /usr/bin/python3 to /usr/bin/python3.8).")
 
-    actual_basename = os.path.basename(os.path.realpath(shutil.which(basename)))
-    print_info(f"To pass the checks, the executable must be {actual_basename}.")
-    assert os.path.basename(process.exe()) == actual_basename, f"Executable must be '{actual_basename}'. Yours is: {os.path.basename(process.exe())}"
+    goal_basename = os.path.basename(os.path.realpath(shutil.which(basename)))
+    found_basename = os.path.basename(os.path.realpath(shutil.which(process.exe())))
+    print_info(f"To pass the checks, the executable must be {goal_basename}.")
+    assert re.match(basename_regex, os.path.basename(os.path.realpath(shutil.which(process.exe())))), f"Executable must be '{goal_basename}'. Yours is: {found_basename}"
 
 def check_ipython(process):
     print_test("We will now check that that the process is an interactive ipython instance.")
@@ -80,13 +84,13 @@ def check_ipython(process):
     print_info("1. That the process itself is python.")
     print_info("2. That the module being run in python is ipython.")
     print_info("If the process being checked is just a normal 'ipython', you'll be okay!")
-    check_exe_basename(process, 'python')
-    assert os.path.basename(process.cmdline()[1]).startswith('ipython'), "It does not look like the module being run is ipython."
+    check_exe_basename(process, 'python', r"python(\d(\.\d+)?)?$")
+    assert re.match(r".*ipython.*", ' '.join(process.cmdline())), "It does not look like the module being run is ipython."
     assert len(process.cmdline()) == 2, "ipython must be running in its default, interactive mode (i.e., ipython with no commandline arguments)."
 
 def check_python(process):
     print_test("We will now check that that the process is a non-interactive python instance (i.e., an executing python script).")
-    check_exe_basename(process, 'python')
+    check_exe_basename(process, 'python', r"python(\d(\.\d+)?)?$")
     assert len(process.cmdline()) == 2 and process.cmdline()[1].endswith(".py"), "The python process must be executing a python script that you wrote like this: `python my_script.py`"
 
 def check_binary(process):
@@ -120,7 +124,7 @@ def check_binary(process):
 def check_bash(process):
     print_test("Checking to make sure the process is the bash shell. If this is a check for the parent process, then,")
     print_test("most likely, this is what you do by default anyways, but we'll check just in case...")
-    check_exe_basename(process, 'bash')
+    check_exe_basename(process, 'bash', r'.*bash$')
     assert len(process.cmdline()) == 1, f"The shell process must be running in its default, interactive mode (/bin/bash with no commandline arguments). Your commandline arguments are: {process.cmdline()}"
 
 def check_shellscript(process):
