@@ -29,7 +29,7 @@ def test_parents():
         assert b'Success!' in p.readall()
 
     # test ipython
-    with pwn.process(f"""echo 'import subprocess; print(subprocess.check_output("{CHAL} --parent ipython".split()))' | ipython""", shell=True) as p:
+    with pwn.process(f"""echo 'import subprocess; print(subprocess.check_output("{CHAL} --parent ipython".split()))' | ipython3""", shell=True) as p:
         assert b'Success!' in p.readall()
 
     with pwn.process(f"{CHAL} --parent ipython".split()) as p:
