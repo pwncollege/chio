@@ -62,7 +62,7 @@ def print_hype(*msgs):
 
 def check_exe_basename(process, basename, basename_regex=None):
     if basename_regex is None:
-        basename_regex = f"{os.path.basename(os.path.realpath(shutil.which(basename)))}"
+        basename_regex = basename
     print_info(f"The process' executable is {process.exe()}.")
     if os.path.basename(process.exe()) == "docker-init":
         print_warn("This process is the initialization process of your docker container (aka PID 1).")
