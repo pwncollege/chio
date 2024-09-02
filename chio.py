@@ -526,7 +526,7 @@ if __name__ == '__main__':
     add_argument(_parser, "--check_stdout_path", type=str, nargs='?', help="the challenge will check that output is redirected to a specific file path")
     add_argument(_parser, "--check_stderr_path", type=str, nargs='?', help="the challenge will check that error output is redirected to a specific file path")
     add_argument(_parser, "--check_stdin_fifo", action='store_true', help="the challenge will make sure that stdin is redirected from a fifo")
-    add_argument(_parser, "--check_stdout_fifo", action='store_true', help="the challenge will make sure that stdout is a redirected from fifo")
+    add_argument(_parser, "--check_stdout_fifo", action='store_true', help="the challenge will make sure that stdout is redirected to a fifo")
 
     # other process stuff
     add_argument(_parser, "--cwd", type=str, nargs='?', help="the challenge will check that it is running in a specific current working directory")
