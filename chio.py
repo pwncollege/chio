@@ -1,4 +1,4 @@
-#!/usr/bin/env -S python3 -I
+#!/usr/bin/python3 -I
 
 import argparse
 import asteval
