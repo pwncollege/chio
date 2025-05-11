@@ -37,7 +37,7 @@ def print_msg(mtype, *msgs):
     if _last_type and _last_type != mtype:
         print("", file=f)
     _last_type = mtype
-    print(f"[{mtype.upper()}]", *msgs, file=f)
+    print(f"[{mtype.upper()}]", *msgs, file=f, flush=True)
 
 def print_info(*msgs):
     print_msg("info", *msgs)
