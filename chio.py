@@ -159,6 +159,7 @@ PROCESS_TYPE_CHECKERS = {
     'tee': lambda p: check_exe_basename(p, 'tee'),
     'find': lambda p: check_exe_basename(p, 'find'),
     'rev': lambda p: check_exe_basename(p, 'rev'),
+    'diff': lambda p: check_exe_basename(p, 'diff'),
 }
 
 #
